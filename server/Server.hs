@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -8,9 +9,9 @@ module Main
 
 import Control.Monad.IO.Class
 import Data.Monoid
+import Data.Text (Text)
 import Data.Time.LocalTime
 import Lucid
-import Lucid.Base
 import Miso (View, ToServerRoutes)
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.RequestLogger
@@ -46,16 +47,8 @@ instance ToHtml a => ToHtml (Wrapper a) where
     doctypehtml_ $ do
       head_ $ do
         meta_ [charset_ "utf-8"]
-        jsRef "static/all.js"
+        script_ [src_ "static/all.js", async_ mempty, defer_ mempty] ("" :: Text)
       body_ (toHtml a)
-    where
-      jsRef href =
-        with
-          (script_ mempty)
-          [ makeAttribute "src" href
-          , makeAttribute "async" mempty
-          , makeAttribute "defer" mempty
-          ]
 
 type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 
