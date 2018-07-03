@@ -8,7 +8,7 @@ let
   };
   pkgs = import nixpkgs {};
 
-  example-src = pkgs.lib.cleanSourceWith {
+  nix-miso-template-src = pkgs.lib.cleanSourceWith {
     filter = (path: type:
       let base = baseNameOf (toString path);
       in !(pkgs.lib.hasPrefix ".ghc.environment." base)
@@ -17,7 +17,7 @@ let
   };
 
   overrides = self: super: {
-    example = super.callCabal2nix "example" example-src {};
+    nix-miso-template = super.callCabal2nix "nix-miso-template" nix-miso-template-src {};
     http-types = super.callHackage "http-types" "0.11" {};
     miso = super.callHackage "miso" "0.20.1.0" {};
     resourcet = super.callHackage "resourcet" "1.1.11" {};
@@ -50,13 +50,13 @@ let
     overrides = overrides;
   });
 in
-{ server = ghcPackages.example;
+{ server = ghcPackages.nix-miso-template;
   server-shell = ghcPackages.shellFor {
-    packages = p: [p.example];
+    packages = p: [p.nix-miso-template];
   };
-  client = ghcjsPackages.example;
+  client = ghcjsPackages.nix-miso-template;
   client-shell = ghcjsPackages.shellFor {
-    packages = p: [p.example];
+    packages = p: [p.nix-miso-template];
     buildInputs = [ghcPackages.cabal-plan];
   };
 }

@@ -12,7 +12,7 @@ import Miso (View, ToServerRoutes(..))
 import Network.Wai.Handler.Warp
 import Servant
 
-import Example
+import Shared
 
 port :: Int
 port = 8080

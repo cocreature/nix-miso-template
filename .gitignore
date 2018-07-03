@@ -1,1 +1,5 @@
 *~
+dist-newstyle/
+.ghc.environment.*
+assets/all.js
+cabal.project.local

@@ -8,7 +8,7 @@ import Data.Proxy
 import Miso
 import Servant.API
 
-import Example
+import Shared
 
 main :: IO ()
 main = do

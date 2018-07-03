@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-module Example
+module Shared
   ( Model(..)
   , Action(..)
   , ClientRoutes
