@@ -31,6 +31,7 @@ let
       sha256 = "03b4d6q2g2xkrcvn3768b3qx2fj82gpgwar77rbn6nw3850kxjqh";
     };
     overrides = self: super: overrides self super // {
+      ghcid = super.callHackage "ghcid" "0.7" {};
       cabal-plan = pkgs.haskell.lib.overrideCabal (
         super.callCabal2nix "cabal-plan" (pkgs.fetchFromGitHub {
           owner = "hvr";
@@ -47,12 +48,21 @@ let
       url = "https://github.com/commercialhaskell/all-cabal-hashes/archive/be1df75f15b7b1b924b9b8ed506cf26fd8c48f88.tar.gz";
       sha256 = "03b4d6q2g2xkrcvn3768b3qx2fj82gpgwar77rbn6nw3850kxjqh";
     };
-    overrides = overrides;
+    overrides = self: super: overrides self super // {
+      servant-client-ghcjs = pkgs.haskell.lib.doJailbreak (super.callCabal2nix "servant-client-ghcjs" ((pkgs.fetchFromGitHub {
+        owner = "haskell-servant";
+        repo = "servant";
+        rev = "544bb8184e1adbcc2359767c172b4922f8b2d650";
+        sha256 = "0hkyim72sk0c1p7rwv0dggk3j8zlxpgkjl14skqkrm9yas88r5yn";
+        }) + /servant-client-ghcjs) {});
+      servant-client-core = super.callHackage "servant-client-core" "0.12" {};
+    };
   });
 in
 { server = ghcPackages.nix-miso-template;
   server-shell = ghcPackages.shellFor {
     packages = p: [p.nix-miso-template];
+    buildInputs = [ghcPackages.ghcid];
   };
   client = ghcjsPackages.nix-miso-template;
   client-shell = ghcjsPackages.shellFor {

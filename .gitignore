@@ -1,5 +1,5 @@
 *~
 dist-newstyle/
 .ghc.environment.*
-assets/all.js
+static/all.js
 cabal.project.local

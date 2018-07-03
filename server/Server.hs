@@ -6,10 +6,14 @@ module Main
   ( main
   ) where
 
+import Control.Monad.IO.Class
+import Data.Monoid
+import Data.Time.LocalTime
 import Lucid
 import Lucid.Base
-import Miso (View, ToServerRoutes(..))
+import Miso (View, ToServerRoutes)
 import Network.Wai.Handler.Warp
+import Network.Wai.Middleware.RequestLogger
 import Servant
 
 import Shared
@@ -19,7 +23,8 @@ port = 8080
 
 main :: IO ()
 main = do
-  run port $ app
+  putStrLn ("Starting server on port " <> show port)
+  run port $ logStdoutDev app
 
 newtype Wrapper a = Wrapper a
   deriving (Show, Eq)
@@ -43,17 +48,20 @@ instance ToHtml a => ToHtml (Wrapper a) where
 
 type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 
-type API = "static" :> Raw :<|> ServerRoutes
+type API = "static" :> Raw :<|> GetTimeAPI :<|> ServerRoutes
 
 app :: Application
-app = serve (Proxy @API) (staticHandler :<|> serverHandlers)
+app = serve (Proxy @API) (staticHandler :<|> getTimeHandler :<|> serverHandlers)
 
+staticHandler :: Tagged Handler Application
 staticHandler = serveDirectoryWebApp "static"
 
+getTimeHandler :: Handler Time
+getTimeHandler = Time <$> liftIO getZonedTime
+
 serverHandlers :: Server ServerRoutes
-serverHandlers = homeHandler :<|> firstHandler :<|> secondHandler
+serverHandlers = homeHandler :<|> timeHandler
   where
-    send f u = pure (Wrapper (f (Model {modelURI = u})))
+    send f u = pure (Wrapper (f (initialModel u)))
     homeHandler = send viewHome (getURI @(View Action))
-    firstHandler = send viewFirst (getURI @("first" :> View Action))
-    secondHandler = send viewSecond (getURI @("second" :> View Action))
+    timeHandler = send viewTime (getURI @("time" :> View Action))

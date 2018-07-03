@@ -5,8 +5,11 @@ module Main
   ) where
 
 import Data.Proxy
+import Data.Time.Format
 import Miso
+import Miso.String
 import Servant.API
+import Servant.Client.Ghcjs
 
 import Shared
 
@@ -14,7 +17,7 @@ main :: IO ()
 main = do
   miso $ \currentURI ->
     App
-      { model = Model currentURI
+      { model = initialModel currentURI
       , view = \m -> case runRoute (Proxy @ClientRoutes) views modelURI m of
           Left _ -> viewHome m
           Right v -> v
@@ -26,9 +29,21 @@ main = do
       }
 
 update' :: Action -> Model -> Effect Action Model
+update' NoOp m = noEff m
 update' (HandleURI u) m = m { modelURI = u} <# pure NoOp
 update' (ChangeURI u) m = m <# (pushURI u *> pure NoOp)
-update' NoOp m = noEff m
+update' (SetTime t) m =
+  noEff (m { modelTime = Just (ms (formatTime defaultTimeLocale "%H:%M:%S" t)) })
+update' (SetTimeErr err) m = noEff (m { modelTime = Just err })
+update' RefreshTime m = m <# do
+  timeOrErr <- runClientM getTime
+  pure $ case timeOrErr of
+    Left err -> SetTimeErr (ms (show err))
+    Right (Time time) -> SetTime time
 
-views :: (Model -> View Action) :<|> (Model -> View Action) :<|> (Model -> View Action)
-views = viewHome :<|> viewFirst :<|> viewSecond
+views :: (Model -> View Action) :<|> (Model -> View Action)
+views = viewHome :<|> viewTime
+
+
+getTime :: Client ClientM GetTimeAPI
+getTime = client (Proxy @GetTimeAPI)
