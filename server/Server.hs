@@ -14,17 +14,28 @@ import Lucid.Base
 import Miso (View, ToServerRoutes)
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.RequestLogger
+import Options.Applicative
 import Servant
 
 import Shared
 
-port :: Int
-port = 8080
+data Opts = Opts
+  { optPort :: Int
+  , optStaticDir :: FilePath
+  } deriving (Show, Eq)
+
+optParser :: Parser Opts
+optParser =
+  Opts
+    <$> option auto (short 'p' <> metavar "PORT" <> value 8080)
+    <*> strOption (short 'd' <> metavar "DOCDIR" <> value "static")
 
 main :: IO ()
 main = do
+  opts <- execParser (info (optParser <**> helper) fullDesc)
+  let port = optPort opts
   putStrLn ("Starting server on port " <> show port)
-  run port $ logStdoutDev app
+  run port $ logStdoutDev (app (optStaticDir opts))
 
 newtype Wrapper a = Wrapper a
   deriving (Show, Eq)
@@ -50,11 +61,11 @@ type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 
 type API = "static" :> Raw :<|> GetTimeAPI :<|> ServerRoutes
 
-app :: Application
-app = serve (Proxy @API) (staticHandler :<|> getTimeHandler :<|> serverHandlers)
+app :: FilePath -> Application
+app staticDir = serve (Proxy @API) (staticHandler staticDir :<|> getTimeHandler :<|> serverHandlers)
 
-staticHandler :: Tagged Handler Application
-staticHandler = serveDirectoryWebApp "static"
+staticHandler :: FilePath -> Tagged Handler Application
+staticHandler staticDir = serveDirectoryWebApp staticDir
 
 getTimeHandler :: Handler Time
 getTimeHandler = Time <$> liftIO getZonedTime

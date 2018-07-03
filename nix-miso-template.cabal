@@ -31,6 +31,7 @@ executable server
                   , aeson
                   , lucid
                   , miso
+                  , optparse-applicative
                   , servant
                   , servant-server
                   , time
