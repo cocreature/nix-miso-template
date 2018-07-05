@@ -54,6 +54,13 @@ data Action
   | RefreshTime
   deriving Show
 
+type ClientRoutes
+   =    View Action
+   :<|> ("time" :> View Action)
+
+getURI :: forall a. (HasLink a, IsElem a ClientRoutes, MkLink a ~ Link) => URI
+getURI = linkURI (safeLink (Proxy :: Proxy ClientRoutes) (Proxy :: Proxy a))
+
 viewHome :: Model -> View Action
 viewHome _ =
   div_
@@ -72,11 +79,8 @@ viewTime m =
     , button_ [onClick (ChangeURI (getURI @(View Action)))] ["Go Home"]
     ]
 
-type ClientRoutes
-   = View Action :<|> ("time" :> View Action)
-
-getURI :: forall a. (HasLink a, IsElem a ClientRoutes, MkLink a ~ Link) => URI
-getURI = linkURI (safeLink (Proxy :: Proxy ClientRoutes) (Proxy :: Proxy a))
+views :: (Model -> View Action) :<|> (Model -> View Action)
+views = viewHome :<|> viewTime
 
 update' :: Action -> Model -> Effect Action Model
 update' NoOp m = noEff m
@@ -90,9 +94,6 @@ update' RefreshTime m = m <# do
   pure $ case timeOrErr of
     Left err -> SetTimeErr (ms (show err))
     Right (Time time) -> SetTime time
-
-views :: (Model -> View Action) :<|> (Model -> View Action)
-views = viewHome :<|> viewTime
 
 getTime :: Client ClientM GetTimeAPI
 getTime = client (Proxy @GetTimeAPI)
