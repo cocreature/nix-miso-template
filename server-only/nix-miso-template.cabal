@@ -1,0 +1,22 @@
+name:               nix-miso-template
+version:            0.1.0
+synopsis:           Nix miso template
+cabal-version:      1.24
+build-type:         Simple
+
+executable server
+  hs-source-dirs:   server
+  main-is:          Server.hs
+
+  build-depends:    base
+                  , aeson
+                  , optparse-applicative
+                  , servant
+                  , servant-server
+                  , time
+                  , warp
+                  , wai-extra
+
+  ghc-options:      -Wall
+
+  default-language: Haskell2010

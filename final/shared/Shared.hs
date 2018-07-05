@@ -68,11 +68,3 @@ type ClientRoutes
 
 getURI :: forall a. (HasLink a, IsElem a ClientRoutes, MkLink a ~ Link) => URI
 getURI = linkURI (safeLink (Proxy :: Proxy ClientRoutes) (Proxy :: Proxy a))
-
-type GetTimeAPI = "api" :> "time" :> Get '[JSON] Time
-
-newtype Time = Time ZonedTime deriving Generic
-
-instance ToJSON Time
-
-instance FromJSON Time
