@@ -1,5 +1,12 @@
+{ rev ? "fdfe5b028bd4da08f0c8aabf9fb5e143ce96c56f"
+, outputSha256 ? "0x0p418csdmpdfp6v4gl5ahzqhg115bb3cvrz1rb1jc7n4vxhcc8"
+}:
 let
-  pkgs = import <nixpkgs> {};
+  nixpkgs = builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+    sha256 = outputSha256;
+  };
+  pkgs = import nixpkgs {};
   haskellPkgs = pkgs.haskell.packages.ghc822.override(old: {
     overrides = self: super: {
       nix-miso-template = super.callCabal2nix "nix-miso-template" ./. {};

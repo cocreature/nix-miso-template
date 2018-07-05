@@ -26,11 +26,13 @@ let
     servant-server = super.callHackage "servant-server" "0.12" {};
   };
 
+  cabal-hashes = builtins.fetchurl {
+    url = "https://github.com/commercialhaskell/all-cabal-hashes/archive/be1df75f15b7b1b924b9b8ed506cf26fd8c48f88.tar.gz";
+    sha256 = "03b4d6q2g2xkrcvn3768b3qx2fj82gpgwar77rbn6nw3850kxjqh";
+  };
+
   ghcPackages = pkgs.haskell.packages.ghc822.override(old: {
-    all-cabal-hashes = builtins.fetchurl {
-      url = "https://github.com/commercialhaskell/all-cabal-hashes/archive/be1df75f15b7b1b924b9b8ed506cf26fd8c48f88.tar.gz";
-      sha256 = "03b4d6q2g2xkrcvn3768b3qx2fj82gpgwar77rbn6nw3850kxjqh";
-    };
+    all-cabal-hashes = cabal-hashes;
     overrides = self: super: overrides self super // {
       cabal-plan = pkgs.haskell.lib.overrideCabal (
         super.callCabal2nix "cabal-plan" (pkgs.fetchFromGitHub {
@@ -44,10 +46,7 @@ let
     });
 
   ghcjsPackages = pkgs.haskell.packages.ghcjs80.override(old: {
-    all-cabal-hashes = builtins.fetchurl {
-      url = "https://github.com/commercialhaskell/all-cabal-hashes/archive/be1df75f15b7b1b924b9b8ed506cf26fd8c48f88.tar.gz";
-      sha256 = "03b4d6q2g2xkrcvn3768b3qx2fj82gpgwar77rbn6nw3850kxjqh";
-    };
+    all-cabal-hashes = cabal-hashes;
     overrides = self: super: overrides self super // {
       servant-client-ghcjs = pkgs.haskell.lib.doJailbreak (super.callCabal2nix "servant-client-ghcjs" ((pkgs.fetchFromGitHub {
         owner = "haskell-servant";
@@ -67,19 +66,5 @@ in rec
   client-shell = ghcjsPackages.shellFor {
     packages = p: [p.nix-miso-template];
     buildInputs = [ghcPackages.cabal-plan];
-  };
-  docker-image = pkgs.dockerTools.buildImage {
-    name = "nix-miso-template";
-    contents = [ server ];
-    extraCommands = ''
-      mkdir -p "data"
-      cp "${client}/bin/client.jsexe/all.js" "data/all.js"
-    '';
-    config = {
-      Cmd = [ "/bin/server" "-d" "/data" ];
-      ExposedPorts = {
-        "8080/tcp" = {};
-      };
-    };
   };
 }
