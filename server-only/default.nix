@@ -19,6 +19,6 @@ let
 in
 { server = haskellPkgs.nix-miso-template;
   server-shell = haskellPkgs.shellFor {
-  packages = p: [p.nix-miso-template];
+    packages = p: [p.nix-miso-template];
   };
 }
