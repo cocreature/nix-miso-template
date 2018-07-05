@@ -1,6 +1,6 @@
 *~
 dist-newstyle/
 .ghc.environment.*
-static/all.js
+*/static/*
 cabal.project.local
 result*
