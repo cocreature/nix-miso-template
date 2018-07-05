@@ -58,7 +58,7 @@ let
     };
   });
 in rec
-{ server = pkgs.haskell.lib.justStaticExecutables (ghcPackages.nix-miso-template);
+{ server = ghcPackages.nix-miso-template;
   server-shell = ghcPackages.shellFor {
     packages = p: [p.nix-miso-template];
   };

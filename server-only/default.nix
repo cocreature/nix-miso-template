@@ -7,9 +7,19 @@ let
     sha256 = outputSha256;
   };
   pkgs = import nixpkgs {};
+
+  nix-miso-template-src = pkgs.lib.cleanSourceWith {
+    filter = (path: type:
+      let base = baseNameOf (toString path);
+      in !(pkgs.lib.hasPrefix ".ghc.environment." base) &&
+         !(pkgs.lib.hasSuffix ".nix" base)
+    );
+    src = pkgs.lib.cleanSource ./.;
+  };
+
   haskellPkgs = pkgs.haskell.packages.ghc822.override(old: {
     overrides = self: super: {
-      nix-miso-template = super.callCabal2nix "nix-miso-template" ./. {};
+      nix-miso-template = super.callCabal2nix "nix-miso-template" nix-miso-template-src {};
       http-types = super.callHackage "http-types" "0.11" {};
       resourcet = super.callHackage "resourcet" "1.1.11" {};
       servant = super.callHackage "servant" "0.12.1" {};

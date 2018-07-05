@@ -3,3 +3,4 @@ dist-newstyle/
 .ghc.environment.*
 static/all.js
 cabal.project.local
+result*
