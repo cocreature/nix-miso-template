@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGe DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -9,14 +7,14 @@ module Main
   ) where
 
 import Control.Monad.IO.Class
-import Data.Aeson
 import Data.Monoid
 import Data.Time.LocalTime
-import GHC.Generics
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.RequestLogger
 import Options.Applicative
 import Servant
+
+import Shared
 
 data Opts = Opts
   { optPort :: Int
@@ -39,14 +37,6 @@ main = do
 type API
   =    "static" :> Raw
   :<|> GetTimeAPI
-
-type GetTimeAPI = "api" :> "time" :> Get '[JSON] Time
-
-newtype Time = Time ZonedTime deriving Generic
-
-instance ToJSON Time
-
-instance FromJSON Time
 
 app :: FilePath -> Application
 app staticDir = serve (Proxy @API) (staticHandler staticDir :<|> getTimeHandler)

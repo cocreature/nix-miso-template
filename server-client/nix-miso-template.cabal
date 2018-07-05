@@ -1,0 +1,60 @@
+name: nix-miso-template
+version: 0.1.0
+synopsis: Nix miso template
+cabal-version: 1.24
+build-type: Simple
+
+library
+  hs-source-dirs:   shared
+
+  exposed-modules:  Shared
+
+  build-depends:    base
+                  , aeson
+                  , servant
+                  , time
+
+  ghc-options:      -Wall
+
+  default-language: Haskell2010
+
+executable server
+  hs-source-dirs:   server
+  main-is:          Server.hs
+
+  if impl(ghcjs)
+    buildable:      False
+  else
+    build-depends:  base
+                  , nix-miso-template
+                  , aeson
+                  , optparse-applicative
+                  , servant
+                  , servant-server
+                  , text
+                  , time
+                  , warp
+                  , wai-extra
+
+  ghc-options:      -Wall
+
+  default-language: Haskell2010
+
+executable client
+  hs-source-dirs:   client
+  main-is:          Client.hs
+
+  if !impl(ghcjs)
+    buildable:      False
+  else
+    build-depends:  base
+                  , aeson
+                  , nix-miso-template
+                  , miso
+                  , servant
+                  , servant-client-ghcjs
+                  , time
+
+  ghc-options:      -Wall
+
+  default-language: Haskell2010
