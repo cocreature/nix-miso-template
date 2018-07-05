@@ -28,6 +28,14 @@ import Miso.String
 import Servant.API
 import Servant.Utils.Links
 
+type GetTimeAPI = "api" :> "time" :> Get '[JSON] Time
+
+newtype Time = Time ZonedTime deriving Generic
+
+instance ToJSON Time
+
+instance FromJSON Time
+
 data Model = Model
   { modelURI :: URI
   , modelTime :: Maybe MisoString
