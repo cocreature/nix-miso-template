@@ -48,8 +48,7 @@ data Action
   = NoOp
   | ChangeURI URI
   | HandleURI URI
-  | SetTime ZonedTime
-  | SetTimeErr MisoString
+  | SetTime MisoString
   | RefreshTime
   deriving Show
 

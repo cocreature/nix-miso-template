@@ -58,7 +58,7 @@ let
     };
   });
 in rec
-{ server = pkgs.haskell.lib.justStaticExecutables (ghcPackages.nix-miso-template);
+{ server = ghcPackages.nix-miso-template;
   server-shell = ghcPackages.shellFor {
     packages = p: [p.nix-miso-template];
   };
@@ -66,19 +66,5 @@ in rec
   client-shell = ghcjsPackages.shellFor {
     packages = p: [p.nix-miso-template];
     buildInputs = [ghcPackages.cabal-plan];
-  };
-  docker-image = pkgs.dockerTools.buildImage {
-    name = "nix-miso-template";
-    contents = [ server ];
-    extraCommands = ''
-      mkdir -p "data"
-      cp "${client}/bin/client.jsexe/all.js" "data/all.js"
-    '';
-    config = {
-      Cmd = [ "/bin/server" "-d" "/data" ];
-      ExposedPorts = {
-        "8080/tcp" = {};
-      };
-    };
   };
 }

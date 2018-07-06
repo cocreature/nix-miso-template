@@ -33,13 +33,12 @@ update' NoOp m = noEff m
 update' (HandleURI u) m = m { modelURI = u} <# pure NoOp
 update' (ChangeURI u) m = m <# (pushURI u *> pure NoOp)
 update' (SetTime t) m =
-  noEff (m { modelTime = Just (ms (formatTime defaultTimeLocale "%H:%M:%S" t)) })
-update' (SetTimeErr err) m = noEff (m { modelTime = Just err })
+  noEff (m { modelTime = Just t })
 update' RefreshTime m = m <# do
   timeOrErr <- runClientM getTime
   pure $ case timeOrErr of
-    Left err -> SetTimeErr (ms (show err))
-    Right (Time time) -> SetTime time
+    Left err -> SetTime (ms (show err))
+    Right (Time time) -> SetTime (ms (formatTime defaultTimeLocale "%H:%M:%S" time))
 
 views :: (Model -> View Action) :<|> (Model -> View Action)
 views = viewHome :<|> viewTime
