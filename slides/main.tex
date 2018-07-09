@@ -1,0 +1,285 @@
+\documentclass{beamer}
+\usetheme{metropolis}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{english}
+
+\usepackage[useregional]{datetime2}
+\usepackage{listings}
+\usepackage{lstautogobble}
+\lstset{autogobble,basicstyle=\ttfamily,showstringspaces=alse}
+
+\usepackage{enumitem}
+\setitemize{label=\usebeamerfont*{itemize item}%
+  \usebeamercolor[fg]{itemize item}
+  \usebeamertemplate{itemize item}}
+
+\title{Haskell Development with Nix, GHCJS and Miso}
+\date{\DTMdisplaydate{2018}{07}{09}{}}
+\author{Moritz Kiefer (\texttt{@cocreature})}
+
+\metroset{block=fill}
+
+\begin{document}
+\maketitle
+
+\begin{frame}{Terminology}
+  \begin{block}{Nix}
+    Language and package manager
+  \end{block}
+  \begin{block}{NixOS}
+    Linux distribution built on top of Nix
+  \end{block}
+  \begin{block}{nixpkgs}
+    Official repository for nix expressions
+  \end{block}
+\end{frame}
+
+\begin{frame}{The Life of a Package}
+  \begin{itemize}
+  \item Everything happens in the Nix \emph{store} (\texttt{/nix/store})
+  \item Nix \emph{expressions} produce Nix \emph{derivations}
+  \item A Nix derivation consists of
+    \begin{itemize}
+    \item Input derivations
+    \item Output paths
+    \item Build instructions
+    \end{itemize}
+  \item \emph{Realising} a derivation ensures that the output paths are valid
+    \begin{itemize}
+    \item Either by fetching them from a \emph{substitute}
+    \item or by building the derivation
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{Nix Language}
+\begin{frame}{Basic Values}
+  \begin{itemize}
+  \item Booleans
+  \item Integers
+  \item Floating points
+  \item Null
+  \item Paths
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Strings}
+  \begin{block}{Normal String Literals}
+    \begin{lstlisting}
+      "foo bar"
+    \end{lstlisting}
+  \end{block}
+  \begin{block}{Antiquotation}
+    \begin{lstlisting}
+      "foo ${var} bar"
+    \end{lstlisting}
+  \end{block}
+  \begin{block}{Indented Strings}
+    \begin{lstlisting}
+    ''
+         foo
+         bar
+    ''
+    \end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Lists}
+  \begin{itemize}
+  \item Enclosed in square brackets
+  \item Items separated by spaces
+  \end{itemize}
+  \begin{block}{Example}
+    \begin{lstlisting}
+      [ 123 ./foo.nix "abc" ]
+    \end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Sets}
+  \begin{block}{Example}
+    \begin{lstlisting}
+      { a = 1; b = 5; }
+    \end{lstlisting}
+  \end{block}
+  \begin{block}{Attribute Selection}
+    \begin{lstlisting}
+      { a = 1; b = 5; }.a
+    \end{lstlisting}
+  \end{block}
+  \begin{block}{Recursive Sets}
+    \begin{lstlisting}
+      rec {
+        x = y;
+        y = 123;
+      }
+    \end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{let}-expressions}
+  \begin{block}{Example}
+    \begin{lstlisting}
+      let
+        x = "foo";
+        y = "bar";
+      in x + y
+    \end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Inheriting Attributes}
+  \begin{block}{Without \texttt{inherit}}
+    \begin{lstlisting}
+      let x = 123; in
+      { x = x;
+      }
+    \end{lstlisting}
+  \end{block}
+  \begin{block}{With \texttt{inherit}}
+    \begin{lstlisting}
+      let x = 123; in
+      { inherit x;
+      }
+    \end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Functions}
+  \begin{block}{General Form}
+    \emph{pattern}: body
+  \end{block}
+  \begin{block}{Set Pattern}
+    \begin{lstlisting}
+      {x, y}: x + y
+    \end{lstlisting}
+  \end{block}
+  \begin{block}{Default Values}
+    \begin{lstlisting}
+      {x, y ? 0}: x + y
+    \end{lstlisting}
+  \end{block}
+  \begin{block}{Additional Arguments}
+    \begin{lstlisting}
+      {x, y, ...}: x + y
+    \end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{\texttt{with}-expressions}
+  Brings all attributes of a set in scope
+
+  \begin{block}{Example}
+    with {x = 1; y = 2}; x
+  \end{block}
+\end{frame}
+
+\section{CLI Interface}
+\begin{frame}{CLI Overview}
+  \begin{description}[leftmargin=!,labelwidth=\widthof{\bfseries nix-instantiate}]
+  \item[nix-instantiate]
+    Create a derivation from a nix expression
+
+  \item[nix-store]
+    Manipulate and query the nix store
+
+  \item[nix-build]
+    Create a derivation from a nix expression and build it
+
+  \item[nix-shell]
+    Setup shell environment for building a derivation
+  \end{description}
+\end{frame}
+
+\begin{frame}{nix-instantiate}
+  \begin{itemize}
+  \item Evaluates nix expression and prints path of derivation
+  \item Defaults to \texttt{default.nix}
+  \item Select attribute with \texttt{-A}
+  \item Pass arbitrary expression with \texttt{-E}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{nix-store}
+  \begin{itemize}
+  \item Build a derivation using \texttt{--realise}
+  \item Garbage collect the nix store using \texttt{--gc}
+  \item Show immediate dependencies using \texttt{--query --references}
+  \item Show transitive dependencies using \texttt{--query --requisites}
+  \item Show referrers of store path using \texttt{--query --referrers}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{nix-build}
+  \begin{itemize}
+  \item Combines \texttt{nix-instantiate} and \texttt{nix-store --realise}
+  \item Symlinks store path to \texttt{result}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{nix-shell}
+  \begin{itemize}
+  \item Opens shell that has dependencies of derivation in scope
+  \item Clear environment using \texttt{--pure}
+  \item Specify packages that should be in scope using \texttt{-p}
+  \end{itemize}
+\end{frame}
+
+\section{Miso}
+\begin{frame}[fragile]{\texttt{App} type}
+  \begin{lstlisting}[language=Haskell]
+    data App model action = App
+      { model :: model
+      , update :: action -> model
+               -> Effect action model
+      , view :: model -> View action
+      , subs :: [ Sub action ]
+      , events :: M.Map MisoString Bool
+      , initialAction :: action
+      , mountPoint :: Maybe MisoString
+      }
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Effect}
+  \begin{lstlisting}[language=Haskell]
+    data Effect action model =
+      Effect model [(action -> IO ()) -> IO ()]
+
+    noEff :: model -> Effect action model
+    noEff m = Effect m []
+
+    (<#) :: model -> IO action -> Effect action model
+    m <# act = Effect m [\sink -> sink =<< a]
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{View}
+  \begin{lstlisting}[language=Haskell]
+    div_
+      [ class_ "foobar" ]
+      [ button_
+          [ onClick ButtonClicked ]
+          [ "Click me!" ]
+      ]
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{MisoString}
+  \begin{itemize}
+  \item Type synonym for
+    \begin{itemize}
+    \item \texttt{JSString} when compiled with \texttt{GHCJS}
+    \item \texttt{Text} when compiled with \texttt{GHC}
+    \end{itemize}
+  \item Conversion using \texttt{ToMisoString} typeclass
+    \begin{lstlisting}[language=Haskell]
+      class ToMisoString str where
+        toMisoString :: str -> MisoString
+        fromMisoString :: MisoString -> str
+    \end{lstlisting}
+  \end{itemize}
+\end{frame}
+\end{document}
