@@ -13,6 +13,7 @@ library
                   , aeson
                   , miso
                   , servant
+                  , text
                   , time
 
   ghc-options:      -Wall
@@ -34,10 +35,12 @@ executable server
                   , optparse-applicative
                   , servant
                   , servant-server
+                  , servant-websockets
                   , text
                   , time
                   , warp
                   , wai-extra
+                  , websockets
 
   ghc-options:      -Wall
 

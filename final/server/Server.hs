@@ -6,18 +6,23 @@ module Main
   ( main
   ) where
 
-import Control.Monad.IO.Class
-import Data.Monoid
-import Data.Text (Text)
-import Data.Time.LocalTime
-import Lucid
-import Miso (View, ToServerRoutes)
-import Network.Wai.Handler.Warp
-import Network.Wai.Middleware.RequestLogger
-import Options.Applicative
-import Servant
+import           Control.Concurrent
+import           Control.Monad
+import           Control.Monad.IO.Class
+import           Data.Monoid
+import qualified Data.Text as Text
+import           Data.Text (Text)
+import           Data.Time.LocalTime
+import           Lucid
+import           Miso (View, ToServerRoutes)
+import           Network.Wai.Handler.Warp
+import           Network.Wai.Middleware.RequestLogger
+import           Network.WebSockets
+import           Options.Applicative
+import           Servant
+import           Servant.API.WebSocket
 
-import Shared
+import           Shared
 
 data Opts = Opts
   { optPort :: Int
@@ -37,13 +42,43 @@ main = do
   putStrLn ("Starting server on port " <> show port)
   run port $ logStdoutDev (app (optStaticDir opts))
 
-type API = "static" :> Raw :<|> GetTimeAPI
+type API =
+       "static" :> Raw
+  :<|> "websocket" :> WebSocket
+  :<|> GetTimeAPI
+  :<|> ServerRoutes
+
+type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
+
+newtype Wrapper a = Wrapper a
+
+instance ToHtml a => ToHtml (Wrapper a) where
+  toHtml (Wrapper a) =
+    doctypehtml_ $ do
+      head_ $ do
+        meta_ [charset_ "utf-8"]
+        script_ [src_ "static/all.js"] ("" :: Text)
+      body_ $ do
+        toHtml a
+  toHtmlRaw = toHtml
 
 app :: FilePath -> Application
-app staticDir = serve (Proxy @API) (staticHandler staticDir :<|> getTimeHandler)
+app staticDir = serve (Proxy @API) (staticHandler staticDir :<|> websocketHandler :<|> getTimeHandler :<|> serverHandlers)
+
+websocketHandler :: Connection -> Handler ()
+websocketHandler conn = do
+  liftIO . forM_ [1::Int ..] $ \i -> do
+    sendTextData conn (Text.pack (show (show i))) >> threadDelay 1000000
+
+serverHandlers :: Handler (Wrapper (View Action)) :<|> Handler (Wrapper (View Action))
+serverHandlers = homeHandler :<|> timeHandler
+  where homeHandler = pure (Wrapper (viewHome (initialModel (getURI @(View Action)))))
+        timeHandler = pure (Wrapper (viewTime (initialModel (getURI @("time" :> View Action)))))
 
 staticHandler :: FilePath -> Tagged Handler Application
 staticHandler staticDir = serveDirectoryWebApp staticDir
 
-getTimeHandler :: Handler Time
-getTimeHandler = Time <$> liftIO getZonedTime
+getTimeHandler :: Maybe Text -> Handler Time
+getTimeHandler p = do
+  t <- liftIO getZonedTime
+  pure (Time t p)
